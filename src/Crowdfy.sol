@@ -1,4 +1,4 @@
-// SPDX-License-Indetifier: MIT
+// SPDX-License-Indetifier : MIT
 
 pragma solidity ^0.8.23;
 
@@ -29,21 +29,47 @@ contract Crowdfy {
 
     Campaign[] private campaigns;
 
-    mapping(uint256 campaignId => Participant) private campaignParticipants;
+    mapping(uint256 => Participant[]) private campaignParticipants;
 
     event NewCampaignHasBeenCreated(uint256 indexed campaignId);
     event CampaignStatusChanged(
         uint256 indexed campaignId,
-        CampaignStatus status
+        CampaignStatus indexed status
     );
     event DonationReceived(
         uint256 indexed campaignId,
         address indexed participant
     );
+    event FallbackCalled(
+        address indexed sender,
+        uint256 indexed amount,
+        bytes indexed data
+    );
+    event ReceiveCalled(address indexed sender, uint256 indexed amount);
 
-    error InsufficientFunds();
+    error CampaignIsClosed();
+    error InvalidTime();
+    error AmountMustBeGreaterThanZero();
     error CampaignNotFound();
-    error TransferFailed(uint256 amount);
+    error TransferFailed(uint256 campaignId, uint256 amount);
+
+    modifier checkTime(uint256 _campaignStart, uint256 _campaignEnd) {
+        if (
+            _campaignStart < block.timestamp ||
+            _campaignEnd < block.timestamp ||
+            _campaignStart > _campaignEnd
+        ) {
+            revert InvalidTime();
+        }
+        _;
+    }
+
+    modifier checkStatus(uint256 _campaignId) {
+        if (campaigns[_campaignId].status == CampaignStatus.CLOSED) {
+            revert CampaignIsClosed();
+        }
+        _;
+    }
 
     modifier checkCampaign(uint256 _campaignId) {
         uint256 campaignTotal = campaigns.length;
@@ -61,8 +87,8 @@ contract Crowdfy {
     }
 
     modifier checkFunds(uint256 value) {
-        if (value == 0) {
-            revert InsufficientFunds();
+        if (value <= 0) {
+            revert AmountMustBeGreaterThanZero();
         }
         _;
     }
@@ -74,7 +100,7 @@ contract Crowdfy {
         uint256 _campaignEnd,
         uint256 _fundsRequired,
         uint256 _currentRaised
-    ) external {
+    ) external checkTime(_campaignStart, _campaignEnd) {
         campaigns.push(
             Campaign({
                 id: campaigns.length,
@@ -118,16 +144,39 @@ contract Crowdfy {
 
     function participateCampaign(
         uint256 _campaignId
-    ) external payable checkCampaign(_campaignId) checkFunds(msg.value) {
-        address payable recipient = payable(campaigns[_campaignId].campaignCreator);
-        (bool success, ) = recipient.call{value: msg.value}("");
+    )
+        external
+        payable
+        checkCampaign(_campaignId)
+        checkStatus(_campaignId)
+        checkFunds(msg.value)
+    {
+        address payable recipient = payable(
+            campaigns[_campaignId].campaignCreator
+        );
+        bool success = recipient.send(msg.value);
         if (success) {
             campaigns[_campaignId].currentRaised += msg.value;
+            _addParticipantToMapping(_campaignId, msg.sender, msg.value);
             emit DonationReceived(_campaignId, recipient);
+        } else {
+            revert TransferFailed(_campaignId, msg.value);
         }
-        else {
-            revert TransferFailed(msg.value);
-        }
+    }
+
+    function _addParticipantToMapping(
+        uint256 _campaignId,
+        address _sender,
+        uint256 _amount
+    ) private {
+        campaignParticipants[_campaignId].push(
+            Participant({
+                id: campaignParticipants[_campaignId].length,
+                user: _sender,
+                donationAmount: _amount,
+                timestamp: block.timestamp
+            })
+        );
     }
 
     function getCampaigns() external view returns (Campaign[] memory) {
@@ -137,11 +186,16 @@ contract Crowdfy {
     function getParticipant(
         uint256 _campaignId
     ) external view returns (Participant[] memory) {
-
+        Participant[] memory participants = campaignParticipants[_campaignId];
+        return participants;
     }
 
-    function getHistory(
-        address user
-    ) external view returns (Participant[] memory) {}
+    receive() external payable {
+        emit ReceiveCalled(msg.sender, msg.value);
+    }
+
+    fallback() external payable {
+        emit FallbackCalled(msg.sender, msg.value, msg.data);
+    }
     //
 }
