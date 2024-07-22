@@ -13,6 +13,7 @@ contract Crowdfy {
         uint256 id;
         string campaignTitle;
         string campaignDescription;
+        string campaignPicture;
         uint256 campaignStart;
         uint256 campaignEnd;
         address campaignCreator;
@@ -106,6 +107,7 @@ contract Crowdfy {
     modifier checkEmptyField(
         string memory _campaignTitle,
         string memory _campaignDescription,
+        string memory _campaignPicture,
         uint256 _campaignStart,
         uint256 _campaignEnd,
         uint256 _fundsRequired
@@ -113,6 +115,7 @@ contract Crowdfy {
         if (
             bytes(_campaignTitle).length == 0 ||
             bytes(_campaignDescription).length == 0 ||
+            bytes(_campaignPicture).length == 0 ||
             _campaignStart == 0 ||
             _campaignEnd == 0 ||
             _fundsRequired == 0
@@ -126,6 +129,7 @@ contract Crowdfy {
     function createCampaign(
         string memory _campaignTitle,
         string memory _campaignDescription,
+        string memory _campaignPicture,
         uint256 _campaignStart,
         uint256 _campaignEnd,
         uint256 _fundsRequired
@@ -134,6 +138,7 @@ contract Crowdfy {
         checkEmptyField(
             _campaignTitle,
             _campaignDescription,
+            _campaignPicture,
             _campaignStart,
             _campaignEnd,
             _fundsRequired
@@ -145,6 +150,7 @@ contract Crowdfy {
                 id: campaigns.length,
                 campaignTitle: _campaignTitle,
                 campaignDescription: _campaignDescription,
+                campaignPicture: _campaignPicture,
                 campaignStart: _campaignStart,
                 campaignEnd: _campaignEnd,
                 campaignCreator: msg.sender,

@@ -21,6 +21,7 @@ contract CrowdfyTest is Test {
         crowdfy.createCampaign(
             "Cancer Campaign",
             "Lorem ipsum dolor sit amet",
+            "image.jpg",
             block.timestamp,
             block.timestamp + 5 minutes,
             1 ether
@@ -65,6 +66,7 @@ contract CrowdfyTest is Test {
         crowdfy.createCampaign(
             "Smoke Campaign",
             "Lorem ipsum dolor sit amet",
+            "image.jpg",
             block.timestamp + 1 minutes,
             block.timestamp + 6 minutes,
             1 ether
@@ -86,20 +88,14 @@ contract CrowdfyTest is Test {
         crowdfy.createCampaign(
             "Poverty Campaign",
             "Lorem ipsum dolor sit amet",
+            "image.jpg",
             block.timestamp + 2 minutes,
             block.timestamp + 1 minutes,
             1 ether
         );
     }
 
-    function testSuccessfullyRevertIfAmountNotGreaterThanZero() public {
-        crowdfy.createCampaign(
-            "Animal Campaign",
-            "Lorem ipsum dolor sit amet",
-            block.timestamp,
-            block.timestamp + 1 minutes,
-            1 ether
-        );
+    function testSuccessfullyRevertIfAmountNotGreaterThanZero() public createCampaign() {
         crowdfy.checkAndChangeCampaignStatus();
         uint256 invalidSendAmount = 0 ether;
         vm.expectRevert(
@@ -111,14 +107,7 @@ contract CrowdfyTest is Test {
         crowdfy.participateCampaign{value: invalidSendAmount}(0);
     }
 
-    function testSuccessfullyRevertIfInsufficientBalance() public {
-        crowdfy.createCampaign(
-            "Business Campaign",
-            "Lorem ipsum dolor sit amet",
-            block.timestamp,
-            block.timestamp + 1 minutes,
-            1 ether
-        );
+    function testSuccessfullyRevertIfInsufficientBalance() public createCampaign() {
         crowdfy.checkAndChangeCampaignStatus();
         vm.deal(BOB, 0.1 ether);
         vm.startPrank(BOB);
@@ -127,14 +116,7 @@ contract CrowdfyTest is Test {
         vm.stopPrank();
     }
 
-    function testSuccessfullyRevertIfCampaignNotFound() public {
-        crowdfy.createCampaign(
-            "Vegan Campaign",
-            "Lorem ipsum dolor sit amet",
-            block.timestamp,
-            block.timestamp + 1 minutes,
-            1 ether
-        );
+    function testSuccessfullyRevertIfCampaignNotFound() public createCampaign() {
         crowdfy.checkAndChangeCampaignStatus();
         vm.expectRevert(
             abi.encodeWithSelector(Crowdfy.CampaignNotFound.selector, 1)
@@ -146,6 +128,7 @@ contract CrowdfyTest is Test {
         crowdfy.createCampaign(
             "Business Campaign",
             "Lorem ipsum dolor sit amet",
+            "image.jpg",
             block.timestamp,
             block.timestamp + 1 minutes,
             1 ether
@@ -165,6 +148,7 @@ contract CrowdfyTest is Test {
         crowdfy.createCampaign(
             "",
             "Lorem ipsum dolor sit amet",
+            "",
             0,
             1,
             1 ether
