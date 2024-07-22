@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.23;
 
-import {console} from "forge-std/console.sol";
-
 contract Crowdfy {
     //
     enum CampaignStatus {
@@ -33,15 +31,14 @@ contract Crowdfy {
 
     mapping(uint256 => Participant[]) private campaignParticipants;
 
-    event NewCampaignHasBeenCreated(
-        uint256 indexed campaignId
-    );
+    event NewCampaignHasBeenCreated(uint256 indexed campaignId);
     event CampaignStatusChanged(
         uint256 indexed campaignId,
         CampaignStatus indexed status
     );
     event DonationReceived(
         uint256 indexed campaignId,
+        address indexed creator,
         address indexed participant
     );
     event FallbackCalled(
@@ -49,10 +46,7 @@ contract Crowdfy {
         uint256 indexed amount,
         bytes indexed data
     );
-    event ReceiveCalled(
-        address indexed sender, 
-        uint256 indexed amount
-    );
+    event ReceiveCalled(address indexed sender, uint256 indexed amount);
 
     error CampaignIsClosed(uint256 campaignId); // done test
     error EmptyFieldExist(); // done test
@@ -176,8 +170,9 @@ contract Crowdfy {
             ) {
                 currentStatus = CampaignStatus.OPEN;
             } else if (
-                block.timestamp >= campaigns[i].campaignEnd &&
-                campaigns[i].status == CampaignStatus.OPEN
+                (block.timestamp >= campaigns[i].campaignEnd &&
+                    campaigns[i].status == CampaignStatus.OPEN) ||
+                (campaigns[i].currentRaised >= campaigns[i].fundsRequired)
             ) {
                 currentStatus = CampaignStatus.CLOSED;
             }
@@ -206,8 +201,9 @@ contract Crowdfy {
         bool success = recipient.send(msg.value);
         if (success) {
             campaigns[_campaignId].currentRaised += msg.value;
+            checkAndChangeCampaignStatus();
             _addParticipantToMapping(_campaignId, msg.sender, msg.value);
-            emit DonationReceived(_campaignId, recipient);
+            emit DonationReceived(_campaignId, recipient, msg.sender);
         } else {
             revert TransferFailed(_campaignId, msg.value);
         }
