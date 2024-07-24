@@ -49,19 +49,18 @@ contract Crowdfy {
     );
     event ReceiveCalled(address indexed sender, uint256 indexed amount);
 
-    error CampaignIsClosed(uint256 campaignId); // done test
-    error EmptyFieldExist(); // done test
-    error InvalidTime(uint256 campaignStart, uint256 campaignEnd); // done test
-    error AmountMustBeGreaterThanZero(uint256 amount); // done test
-    error InsufficientBalance(); // done test
-    error CampaignNotFound(uint256 searchId); // done test
-    error TransferFailed(uint256 campaignId, uint256 amount); // done test
+    error CampaignIsClosed(uint256 campaignId);
+    error EmptyFieldExist();
+    error InvalidTime(uint256 campaignStart, uint256 campaignEnd);
+    error AmountMustBeGreaterThanZero(uint256 amount);
+    error InsufficientBalance();
+    error CampaignNotFound(uint256 searchId);
+    error TransferFailed(uint256 campaignId, uint256 amount);
 
     modifier checkTime(uint256 _campaignStart, uint256 _campaignEnd) {
         if (
-            _campaignStart < block.timestamp ||
             _campaignEnd < block.timestamp ||
-            _campaignStart > _campaignEnd
+            _campaignStart >= _campaignEnd
         ) {
             revert InvalidTime(_campaignStart, _campaignEnd);
         }
@@ -125,7 +124,6 @@ contract Crowdfy {
         _;
     }
 
-    // done test
     function createCampaign(
         string memory _campaignTitle,
         string memory _campaignDescription,
@@ -163,7 +161,6 @@ contract Crowdfy {
         emit NewCampaignHasBeenCreated(campaigns.length - 1);
     }
 
-    // done test
     function checkAndChangeCampaignStatus() public {
         uint256 campaignTotal = campaigns.length;
         for (uint256 i = 0; i < campaignTotal; i++) {
@@ -190,7 +187,6 @@ contract Crowdfy {
         }
     }
 
-    // done test
     function participateCampaign(
         uint256 _campaignId
     )
@@ -215,7 +211,6 @@ contract Crowdfy {
         }
     }
 
-    // done test
     function _addParticipantToMapping(
         uint256 _campaignId,
         address _sender,
@@ -231,12 +226,10 @@ contract Crowdfy {
         );
     }
 
-    // done test
     function getCampaigns() external view returns (Campaign[] memory) {
         return campaigns;
     }
 
-    // done test
     function getParticipant(
         uint256 _campaignId
     ) external view returns (Participant[] memory) {
